@@ -13,6 +13,8 @@ from mjlab.managers.event_manager import EventTermCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg, RayCastSensorCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
+from mjlab.terrains.terrain_generator import TerrainGeneratorCfg
+from src.tasks.velocity.bridge_terrain import BridgeTerrainCfg
 
 from src.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
 
@@ -112,6 +114,8 @@ def unitree_go2_rough_env_cfg(
     params={"sensor_name": nonfoot_ground_cfg.name, "force_threshold": 10.0},
   )
 
+
+  
   # Apply play mode overrides.
   if play:
     # Effectively infinite episode length.
@@ -160,6 +164,26 @@ def unitree_go2_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # Disable terrain curriculum (not present in play mode since rough clears all).
   cfg.curriculum.pop("terrain_levels", None)
 
+  #####################################################
+  # Pat tune: encourage actual forward gait instead of standing wobble.
+  #cfg.rewards["pose"].weight = 0.2
+  #cfg.rewards["foot_gait"].weight = 2.0
+  #cfg.rewards["foot_clearance"].weight = -0.2
+  #cfg.rewards["action_rate_l2"].weight = -0.02
+  if not play:
+    cfg.scene.num_envs = 1024
+    cfg.events.pop("push_robot", None)
+
+  cfg.terminations["illegal_contact"].params["force_threshold"] = 10.0
+
+  twist_cmd = cfg.commands["twist"]
+  assert isinstance(twist_cmd, UniformVelocityCommandCfg)
+  twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+  twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+  twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+
+  #####################################################
+  
   if play:
     twist_cmd = cfg.commands["twist"]
     assert isinstance(twist_cmd, UniformVelocityCommandCfg)
@@ -168,3 +192,45 @@ def unitree_go2_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
 
   return cfg
+
+def unitree_go2_bridge_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+    """Go2 bridge environment."""
+    cfg = unitree_go2_flat_env_cfg(play=play)  # 先继承平地环境
+
+    # --------------------------
+    # 这里放你的 bridge terrain 配置
+    # --------------------------
+    from mjlab.terrains.terrain_generator import TerrainGeneratorCfg, SubTerrainCfg, TerrainGenerator
+
+    bridge_subterrain = SubTerrainCfg(
+        proportion=1.0,
+        size=(5.0, 1.6)  # x=桥长, y=桥全宽
+    )
+
+    bridge_terrain_cfg = TerrainGeneratorCfg(
+        seed=None,
+        curriculum=False,
+        size=(5.0, 1.6),
+        border_width=0.0,
+        sub_terrains={"bridge": bridge_subterrain}
+    )
+
+    cfg.scene.terrain.terrain_type = "generator"
+    cfg.scene.terrain.terrain_generator = TerrainGenerator(bridge_terrain_cfg)
+
+    # spawn/reset 在桥起点附近
+    cfg.events["reset_base"].params["pose_range"] = {
+        "x": (-1.5, -1.2),
+        "y": (-0.1, 0.1),
+        "z": (0.0, 0.0),
+        "yaw": (-0.3, 0.3),
+    }
+
+    # command 限制只走前进
+    twist_cmd = cfg.commands["twist"]
+    assert isinstance(twist_cmd, UniformVelocityCommandCfg)
+    twist_cmd.ranges.lin_vel_x = (-0.2, 1.0)
+    twist_cmd.ranges.lin_vel_y = (-0.05, 0.05)
+    twist_cmd.ranges.ang_vel_z = (-0.05, 0.05)
+
+    return cfg
