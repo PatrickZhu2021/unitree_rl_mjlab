@@ -1,0 +1,290 @@
+===== FILE LIST =====
+src/tasks/velocity/__init__.py
+src/tasks/velocity/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/__pycache__/bridge_terrain.cpython-312.pyc
+src/tasks/velocity/__pycache__/velocity_env_cfg.cpython-310.pyc
+src/tasks/velocity/__pycache__/velocity_env_cfg.cpython-312.pyc
+src/tasks/velocity/bridge_terrain.py
+src/tasks/velocity/config/__init__.py
+src/tasks/velocity/config/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/a2/__init__.py
+src/tasks/velocity/config/a2/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/a2/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/a2/__pycache__/env_cfgs.cpython-310.pyc
+src/tasks/velocity/config/a2/__pycache__/env_cfgs.cpython-312.pyc
+src/tasks/velocity/config/a2/__pycache__/rl_cfg.cpython-310.pyc
+src/tasks/velocity/config/a2/__pycache__/rl_cfg.cpython-312.pyc
+src/tasks/velocity/config/a2/env_cfgs.py
+src/tasks/velocity/config/a2/rl_cfg.py
+src/tasks/velocity/config/as2/__init__.py
+src/tasks/velocity/config/as2/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/as2/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/as2/__pycache__/env_cfgs.cpython-310.pyc
+src/tasks/velocity/config/as2/__pycache__/env_cfgs.cpython-312.pyc
+src/tasks/velocity/config/as2/__pycache__/rl_cfg.cpython-310.pyc
+src/tasks/velocity/config/as2/__pycache__/rl_cfg.cpython-312.pyc
+src/tasks/velocity/config/as2/env_cfgs.py
+src/tasks/velocity/config/as2/rl_cfg.py
+src/tasks/velocity/config/g1/__init__.py
+src/tasks/velocity/config/g1/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/g1/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/g1/__pycache__/env_cfgs.cpython-310.pyc
+src/tasks/velocity/config/g1/__pycache__/env_cfgs.cpython-312.pyc
+src/tasks/velocity/config/g1/__pycache__/rl_cfg.cpython-310.pyc
+src/tasks/velocity/config/g1/__pycache__/rl_cfg.cpython-312.pyc
+src/tasks/velocity/config/g1/env_cfgs.py
+src/tasks/velocity/config/g1/rl_cfg.py
+src/tasks/velocity/config/g1_23dof/__init__.py
+src/tasks/velocity/config/g1_23dof/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/g1_23dof/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/g1_23dof/__pycache__/env_cfgs.cpython-310.pyc
+src/tasks/velocity/config/g1_23dof/__pycache__/env_cfgs.cpython-312.pyc
+src/tasks/velocity/config/g1_23dof/__pycache__/rl_cfg.cpython-310.pyc
+src/tasks/velocity/config/g1_23dof/__pycache__/rl_cfg.cpython-312.pyc
+src/tasks/velocity/config/g1_23dof/env_cfgs.py
+src/tasks/velocity/config/g1_23dof/rl_cfg.py
+src/tasks/velocity/config/go2/__init__.py
+src/tasks/velocity/config/go2/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/go2/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/go2/__pycache__/env_cfgs.cpython-310.pyc
+src/tasks/velocity/config/go2/__pycache__/env_cfgs.cpython-312.pyc
+src/tasks/velocity/config/go2/__pycache__/rl_cfg.cpython-310.pyc
+src/tasks/velocity/config/go2/__pycache__/rl_cfg.cpython-312.pyc
+src/tasks/velocity/config/go2/env_cfgs.py
+src/tasks/velocity/config/go2/rl_cfg.py
+src/tasks/velocity/config/h1_2/__init__.py
+src/tasks/velocity/config/h1_2/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/h1_2/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/h1_2/__pycache__/env_cfgs.cpython-310.pyc
+src/tasks/velocity/config/h1_2/__pycache__/env_cfgs.cpython-312.pyc
+src/tasks/velocity/config/h1_2/__pycache__/rl_cfg.cpython-310.pyc
+src/tasks/velocity/config/h1_2/__pycache__/rl_cfg.cpython-312.pyc
+src/tasks/velocity/config/h1_2/env_cfgs.py
+src/tasks/velocity/config/h1_2/rl_cfg.py
+src/tasks/velocity/config/h2/__init__.py
+src/tasks/velocity/config/h2/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/h2/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/h2/__pycache__/env_cfgs.cpython-310.pyc
+src/tasks/velocity/config/h2/__pycache__/env_cfgs.cpython-312.pyc
+src/tasks/velocity/config/h2/__pycache__/rl_cfg.cpython-310.pyc
+src/tasks/velocity/config/h2/__pycache__/rl_cfg.cpython-312.pyc
+src/tasks/velocity/config/h2/env_cfgs.py
+src/tasks/velocity/config/h2/rl_cfg.py
+src/tasks/velocity/config/r1/__init__.py
+src/tasks/velocity/config/r1/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/config/r1/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/config/r1/__pycache__/env_cfgs.cpython-310.pyc
+src/tasks/velocity/config/r1/__pycache__/env_cfgs.cpython-312.pyc
+src/tasks/velocity/config/r1/__pycache__/rl_cfg.cpython-310.pyc
+src/tasks/velocity/config/r1/__pycache__/rl_cfg.cpython-312.pyc
+src/tasks/velocity/config/r1/env_cfgs.py
+src/tasks/velocity/config/r1/rl_cfg.py
+src/tasks/velocity/mdp/__init__.py
+src/tasks/velocity/mdp/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/mdp/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/mdp/__pycache__/curriculums.cpython-310.pyc
+src/tasks/velocity/mdp/__pycache__/curriculums.cpython-312.pyc
+src/tasks/velocity/mdp/__pycache__/observations.cpython-310.pyc
+src/tasks/velocity/mdp/__pycache__/observations.cpython-312.pyc
+src/tasks/velocity/mdp/__pycache__/rewards.cpython-310.pyc
+src/tasks/velocity/mdp/__pycache__/rewards.cpython-312.pyc
+src/tasks/velocity/mdp/__pycache__/terminations.cpython-310.pyc
+src/tasks/velocity/mdp/__pycache__/terminations.cpython-312.pyc
+src/tasks/velocity/mdp/__pycache__/velocity_command.cpython-310.pyc
+src/tasks/velocity/mdp/__pycache__/velocity_command.cpython-312.pyc
+src/tasks/velocity/mdp/curriculums.py
+src/tasks/velocity/mdp/observations.py
+src/tasks/velocity/mdp/rewards.py
+src/tasks/velocity/mdp/terminations.py
+src/tasks/velocity/mdp/velocity_command.py
+src/tasks/velocity/rl/__init__.py
+src/tasks/velocity/rl/__pycache__/__init__.cpython-310.pyc
+src/tasks/velocity/rl/__pycache__/__init__.cpython-312.pyc
+src/tasks/velocity/rl/__pycache__/runner.cpython-310.pyc
+src/tasks/velocity/rl/__pycache__/runner.cpython-312.pyc
+src/tasks/velocity/rl/runner.py
+src/tasks/velocity/velocity_env_cfg.py
+
+===== COMMAND RELATED =====
+src/tasks/velocity/mdp/rewards.py:334:    - std_standing (speed < walking_threshold): Tight tolerance for holding pose.
+src/tasks/velocity/mdp/rewards.py:350:    _, _, std_standing = resolve_matching_names_values(
+src/tasks/velocity/mdp/rewards.py:351:      data=cfg.params["std_standing"],
+src/tasks/velocity/mdp/rewards.py:354:    self.std_standing = torch.tensor(
+src/tasks/velocity/mdp/rewards.py:355:      std_standing, device=env.device, dtype=torch.float32
+src/tasks/velocity/mdp/rewards.py:373:    std_standing,
+src/tasks/velocity/mdp/rewards.py:381:    del std_standing, std_walking, std_running  # Unused.
+src/tasks/velocity/mdp/rewards.py:391:    standing_mask = (total_speed < walking_threshold).float()
+src/tasks/velocity/mdp/rewards.py:398:      self.std_standing * standing_mask.unsqueeze(1)
+src/tasks/velocity/mdp/rewards.py:410:def stand_still(
+src/tasks/velocity/mdp/curriculums.py:20:  lin_vel_x: tuple[float, float] | None
+src/tasks/velocity/mdp/curriculums.py:21:  lin_vel_y: tuple[float, float] | None
+src/tasks/velocity/mdp/curriculums.py:22:  ang_vel_z: tuple[float, float] | None
+src/tasks/velocity/mdp/curriculums.py:67:def commands_vel(
+src/tasks/velocity/mdp/curriculums.py:79:      if "lin_vel_x" in stage and stage["lin_vel_x"] is not None:
+src/tasks/velocity/mdp/curriculums.py:80:        cfg.ranges.lin_vel_x = stage["lin_vel_x"]
+src/tasks/velocity/mdp/curriculums.py:81:      if "lin_vel_y" in stage and stage["lin_vel_y"] is not None:
+src/tasks/velocity/mdp/curriculums.py:82:        cfg.ranges.lin_vel_y = stage["lin_vel_y"]
+src/tasks/velocity/mdp/curriculums.py:83:      if "ang_vel_z" in stage and stage["ang_vel_z"] is not None:
+src/tasks/velocity/mdp/curriculums.py:84:        cfg.ranges.ang_vel_z = stage["ang_vel_z"]
+src/tasks/velocity/mdp/curriculums.py:86:    # "lin_vel_x_min": torch.tensor(cfg.ranges.lin_vel_x[0]),
+src/tasks/velocity/mdp/curriculums.py:87:    # "lin_vel_x_max": torch.tensor(cfg.ranges.lin_vel_x[1]),
+src/tasks/velocity/mdp/curriculums.py:88:    # "lin_vel_y_min": torch.tensor(cfg.ranges.lin_vel_y[0]),
+src/tasks/velocity/mdp/curriculums.py:89:    # "lin_vel_y_max": torch.tensor(cfg.ranges.lin_vel_y[1]),
+src/tasks/velocity/mdp/curriculums.py:90:    # "ang_vel_z_min": torch.tensor(cfg.ranges.ang_vel_z[0]),
+src/tasks/velocity/mdp/curriculums.py:91:    # "ang_vel_z_max": torch.tensor(cfg.ranges.ang_vel_z[1]),
+src/tasks/velocity/mdp/velocity_command.py:31:    if self.cfg.heading_command and self.cfg.ranges.heading is None:
+src/tasks/velocity/mdp/velocity_command.py:32:      raise ValueError("heading_command=True but ranges.heading is set to None.")
+src/tasks/velocity/mdp/velocity_command.py:33:    if self.cfg.ranges.heading and not self.cfg.heading_command:
+src/tasks/velocity/mdp/velocity_command.py:34:      raise ValueError("ranges.heading is set but heading_command=False.")
+src/tasks/velocity/mdp/velocity_command.py:44:    self.is_standing_env = torch.zeros_like(self.is_heading_env)
+src/tasks/velocity/mdp/velocity_command.py:59:    max_command_time = self.cfg.resampling_time_range[1]
+src/tasks/velocity/mdp/velocity_command.py:74:    self.vel_command_b[env_ids, 0] = r.uniform_(*self.cfg.ranges.lin_vel_x)
+src/tasks/velocity/mdp/velocity_command.py:75:    self.vel_command_b[env_ids, 1] = r.uniform_(*self.cfg.ranges.lin_vel_y)
+src/tasks/velocity/mdp/velocity_command.py:76:    self.vel_command_b[env_ids, 2] = r.uniform_(*self.cfg.ranges.ang_vel_z)
+src/tasks/velocity/mdp/velocity_command.py:78:    if self.cfg.heading_command:
+src/tasks/velocity/mdp/velocity_command.py:79:      assert self.cfg.ranges.heading is not None
+src/tasks/velocity/mdp/velocity_command.py:80:      self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
+src/tasks/velocity/mdp/velocity_command.py:82:    self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
+src/tasks/velocity/mdp/velocity_command.py:84:    init_vel_mask = r.uniform_(0.0, 1.0) < self.cfg.init_velocity_prob
+src/tasks/velocity/mdp/velocity_command.py:100:    if self.cfg.heading_command:
+src/tasks/velocity/mdp/velocity_command.py:105:        min=self.cfg.ranges.ang_vel_z[0],
+src/tasks/velocity/mdp/velocity_command.py:106:        max=self.cfg.ranges.ang_vel_z[1],
+src/tasks/velocity/mdp/velocity_command.py:108:    standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
+src/tasks/velocity/mdp/velocity_command.py:109:    self.vel_command_b[standing_env_ids, :] = 0.0
+src/tasks/velocity/mdp/velocity_command.py:125:      ("lin_vel_x", ranges.lin_vel_x[1]),
+src/tasks/velocity/mdp/velocity_command.py:126:      ("lin_vel_y", ranges.lin_vel_y[1]),
+src/tasks/velocity/mdp/velocity_command.py:127:      ("ang_vel_z", ranges.ang_vel_z[1]),
+src/tasks/velocity/mdp/velocity_command.py:252:  heading_command: bool = False
+src/tasks/velocity/mdp/velocity_command.py:254:  rel_standing_envs: float = 0.0
+src/tasks/velocity/mdp/velocity_command.py:256:  init_velocity_prob: float = 0.0
+src/tasks/velocity/mdp/velocity_command.py:260:    lin_vel_x: tuple[float, float]
+src/tasks/velocity/mdp/velocity_command.py:261:    lin_vel_y: tuple[float, float]
+src/tasks/velocity/mdp/velocity_command.py:262:    ang_vel_z: tuple[float, float]
+src/tasks/velocity/mdp/velocity_command.py:278:    if self.heading_command and self.ranges.heading is None:
+src/tasks/velocity/mdp/velocity_command.py:280:        "The velocity command has heading commands active (heading_command=True) but "
+src/tasks/velocity/mdp/velocity_command.py:281:        "the `ranges.heading` parameter is set to None."
+src/tasks/velocity/config/h1_2/env_cfgs.py:94:  cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
+src/tasks/velocity/config/h1_2/env_cfgs.py:191:    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/h1_2/env_cfgs.py:192:    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/h1_2/env_cfgs.py:193:    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/a2/env_cfgs.py:88:  cfg.rewards["pose"].params["std_standing"] = {
+src/tasks/velocity/config/a2/env_cfgs.py:166:    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/a2/env_cfgs.py:167:    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/a2/env_cfgs.py:168:    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/go2/env_cfgs.py:92:  cfg.rewards["pose"].params["std_standing"] = {
+src/tasks/velocity/config/go2/env_cfgs.py:170:  # Pat tune: encourage actual forward gait instead of standing wobble.
+src/tasks/velocity/config/go2/env_cfgs.py:185:  twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/go2/env_cfgs.py:186:  twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/go2/env_cfgs.py:187:  twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/go2/env_cfgs.py:194:    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/go2/env_cfgs.py:195:    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/go2/env_cfgs.py:196:    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/go2/env_cfgs.py:287:  twist_cmd.heading_command = False
+src/tasks/velocity/config/go2/env_cfgs.py:288:  twist_cmd.ranges.heading = None
+src/tasks/velocity/config/go2/env_cfgs.py:289:  twist_cmd.ranges.lin_vel_x = (-0.2, 2.0)
+src/tasks/velocity/config/go2/env_cfgs.py:290:  twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/go2/env_cfgs.py:291:  twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/h2/env_cfgs.py:93:  cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
+src/tasks/velocity/config/h2/env_cfgs.py:194:    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/h2/env_cfgs.py:195:    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/h2/env_cfgs.py:196:    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/as2/env_cfgs.py:88:  cfg.rewards["pose"].params["std_standing"] = {
+src/tasks/velocity/config/as2/env_cfgs.py:166:    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/as2/env_cfgs.py:167:    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/as2/env_cfgs.py:168:    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/g1_23dof/env_cfgs.py:94:  cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
+src/tasks/velocity/config/g1_23dof/env_cfgs.py:191:    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/g1_23dof/env_cfgs.py:192:    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/g1_23dof/env_cfgs.py:193:    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/r1/env_cfgs.py:94:  cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
+src/tasks/velocity/config/r1/env_cfgs.py:193:    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/r1/env_cfgs.py:194:    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/r1/env_cfgs.py:195:    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/config/g1/env_cfgs.py:94:  cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
+src/tasks/velocity/config/g1/env_cfgs.py:195:    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+src/tasks/velocity/config/g1/env_cfgs.py:196:    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+src/tasks/velocity/config/g1/env_cfgs.py:197:    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+src/tasks/velocity/velocity_env_cfg.py:168:      resampling_time_range=(3.0, 8.0),
+src/tasks/velocity/velocity_env_cfg.py:169:      rel_standing_envs=0.05,
+src/tasks/velocity/velocity_env_cfg.py:170:      heading_command=True,
+src/tasks/velocity/velocity_env_cfg.py:174:        lin_vel_x=(-1.0, 2.0),
+src/tasks/velocity/velocity_env_cfg.py:175:        lin_vel_y=(-1.0, 1.0),
+src/tasks/velocity/velocity_env_cfg.py:176:        ang_vel_z=(-1.0, 1.0),
+src/tasks/velocity/velocity_env_cfg.py:283:        "std_standing": {},  # Set per-robot.
+src/tasks/velocity/velocity_env_cfg.py:345:    "stand_still": RewardTermCfg(
+src/tasks/velocity/velocity_env_cfg.py:346:      func=mdp.stand_still,
+src/tasks/velocity/velocity_env_cfg.py:377:    "command_vel": CurriculumTermCfg(
+src/tasks/velocity/velocity_env_cfg.py:378:      func=mdp.commands_vel,
+src/tasks/velocity/velocity_env_cfg.py:382:          {"step": 0, "lin_vel_x": (-0.5, 1.0), "lin_vel_y": (-0.5, 0.5), "ang_vel_z": (-1.0, 1.0)},
+src/tasks/velocity/velocity_env_cfg.py:383:          {"step": 5000 * 24, "lin_vel_x": (-1.0, 2.0), "lin_vel_y": (-1.0, 1.0)},
+src/tasks/tracking/tracking_env_cfg.py:144:      resampling_time_range=(1.0e9, 1.0e9),
+
+===== REWARD RELATED =====
+src/tasks/velocity/mdp/rewards.py:23:def track_linear_velocity(
+src/tasks/velocity/mdp/rewards.py:43:def track_angular_velocity(
+src/tasks/velocity/mdp/rewards.py:431:def heading_alignment_x(
+src/tasks/velocity/mdp/rewards.py:454:def lateral_velocity_l2(
+src/tasks/velocity/mdp/rewards.py:463:def bridge_centerline_l2(
+src/tasks/velocity/mdp/rewards.py:475:def progress_to_goal_x(
+src/tasks/velocity/mdp/rewards.py:490:  #    "DEBUG progress_to_goal_x:",
+src/tasks/velocity/mdp/rewards.py:498:def bridge_success(
+src/tasks/velocity/mdp/rewards.py:508:def foot_on_bridge_lateral(
+src/tasks/velocity/mdp/rewards.py:523:def forward_velocity_x(
+src/tasks/velocity/config/go2/env_cfgs.py:175:  cfg.rewards["track_angular_velocity"].params["std"] = 0.5
+src/tasks/velocity/config/go2/env_cfgs.py:251:  cfg.rewards["lateral_velocity_l2"] = RewardTermCfg(
+src/tasks/velocity/config/go2/env_cfgs.py:252:    func=bridge_rewards.lateral_velocity_l2,
+src/tasks/velocity/config/go2/env_cfgs.py:256:  cfg.rewards["bridge_centerline_l2"] = RewardTermCfg(
+src/tasks/velocity/config/go2/env_cfgs.py:257:    func=bridge_rewards.bridge_centerline_l2,
+src/tasks/velocity/config/go2/env_cfgs.py:262:  cfg.rewards["progress_to_goal_x"] = RewardTermCfg(
+src/tasks/velocity/config/go2/env_cfgs.py:263:    func=bridge_rewards.progress_to_goal_x,
+src/tasks/velocity/config/go2/env_cfgs.py:271:  cfg.rewards["bridge_success"] = RewardTermCfg(
+src/tasks/velocity/config/go2/env_cfgs.py:272:    func=bridge_rewards.bridge_success,
+src/tasks/velocity/config/go2/env_cfgs.py:279:  cfg.rewards["forward_velocity_x"] = RewardTermCfg(
+src/tasks/velocity/config/go2/env_cfgs.py:280:    func=bridge_rewards.forward_velocity_x,
+src/tasks/velocity/velocity_env_cfg.py:262:    "track_linear_velocity": RewardTermCfg(
+src/tasks/velocity/velocity_env_cfg.py:263:      func=mdp.track_linear_velocity,
+src/tasks/velocity/velocity_env_cfg.py:267:    "track_angular_velocity": RewardTermCfg(
+src/tasks/velocity/velocity_env_cfg.py:268:      func=mdp.track_angular_velocity,
+
+===== RESET / TERRAIN / TERMINATION =====
+src/tasks/velocity/mdp/rewards.py:471:  if hasattr(env.scene, "env_origins"):
+src/tasks/velocity/mdp/rewards.py:472:    y = y - env.scene.env_origins[:, 1]
+src/tasks/velocity/mdp/rewards.py:477:  start_x: float = -1.5,  # 对齐 terrain origin
+src/tasks/velocity/mdp/rewards.py:484:  if hasattr(env.scene, "env_origins"):
+src/tasks/velocity/mdp/rewards.py:485:    x = x - env.scene.env_origins[:, 0]
+src/tasks/velocity/mdp/curriculums.py:48:    asset.data.root_link_pos_w[env_ids, :2] - env.scene.env_origins[env_ids, :2], dim=1
+src/tasks/velocity/mdp/curriculums.py:62:  terrain.update_env_origins(env_ids, move_up, move_down)
+src/tasks/velocity/mdp/terminations.py:13:def illegal_contact(
+src/tasks/velocity/mdp/velocity_command.py:202:      # Skip if robot appears uninitialized (at origin).
+src/tasks/velocity/config/a2/env_cfgs.py:110:  cfg.terminations["illegal_contact"] = TerminationTermCfg(
+src/tasks/velocity/config/a2/env_cfgs.py:111:    func=mdp.illegal_contact,
+src/tasks/velocity/config/go2/env_cfgs.py:114:  cfg.terminations["illegal_contact"] = TerminationTermCfg(
+src/tasks/velocity/config/go2/env_cfgs.py:115:    func=mdp.illegal_contact,
+src/tasks/velocity/config/go2/env_cfgs.py:181:  cfg.terminations["illegal_contact"].params["force_threshold"] = 10.0
+src/tasks/velocity/config/go2/env_cfgs.py:239:  # The current BridgeTerrainCfg returns origin = [-1.5, 0.0, height + 0.5].
+src/tasks/velocity/config/go2/env_cfgs.py:242:  cfg.events["reset_base"].params["pose_range"] = {
+src/tasks/velocity/config/as2/env_cfgs.py:110:  cfg.terminations["illegal_contact"] = TerminationTermCfg(
+src/tasks/velocity/config/as2/env_cfgs.py:111:    func=mdp.illegal_contact,
+src/tasks/velocity/bridge_terrain.py:8:  TerrainOutput,
+src/tasks/velocity/bridge_terrain.py:26:  ) -> TerrainOutput:
+src/tasks/velocity/bridge_terrain.py:55:    return TerrainOutput(
+src/tasks/velocity/bridge_terrain.py:56:      origin=np.array([-1.5, 0.0, self.height + 0.5]),
+src/tasks/velocity/velocity_env_cfg.py:187:    "reset_base": EventTermCfg(
+src/tasks/velocity/velocity_env_cfg.py:188:      func=mdp.reset_root_state_uniform,
+src/tasks/velocity/velocity_env_cfg.py:362:    "fell_over": TerminationTermCfg(
+src/tasks/velocity/velocity_env_cfg.py:363:      func=mdp.bad_orientation,
+src/tasks/velocity/velocity_env_cfg.py:413:      origin_type=ViewerConfig.OriginType.ASSET_BODY,
+src/tasks/tracking/mdp/commands.py:137:      self.motion.body_pos_w[self.time_steps] + self._env.scene.env_origins[:, None, :]
+src/tasks/tracking/mdp/commands.py:156:      + self._env.scene.env_origins
+src/tasks/tracking/tracking_env_cfg.py:296:      origin_type=ViewerConfig.OriginType.ASSET_BODY,
+scripts/visualize_terrain.py:88:  terrain_origins: np.ndarray | None
+scripts/visualize_terrain.py:109:    "terrain_origins": None,
+scripts/visualize_terrain.py:127:    if state["robot_name"] == "None" or state["terrain_origins"] is None:
+scripts/visualize_terrain.py:181:    num_rows, num_cols = state["terrain_origins"].shape[:2]
+scripts/visualize_terrain.py:185:        origin = state["terrain_origins"][row, col]
+scripts/visualize_terrain.py:186:        pos = origin + np.array(robot_cfg.init_state.pos)
+scripts/visualize_terrain.py:270:    state["terrain_origins"] = generator.terrain_origins
+scripts/csv_to_npz.py:251:    root_states[:, :2] += scene.env_origins[:, :2]
+scripts/csv_to_npz.py:411:      origin_type=ViewerConfig.OriginType.ASSET_ROOT,

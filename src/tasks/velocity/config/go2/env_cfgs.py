@@ -453,8 +453,8 @@ def unitree_go2_bridge_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     """Bridge navigation only: Stage 1 navigation task."""
     # important parameters
     training_goal_x = 6.0
-    training_bridge_half_width = 0.20
-    min_training_bridge_half_width = 0.10
+    training_bridge_half_width = 0.20 # 0.10
+    min_training_bridge_half_width = 0.05 # 0.05
     CurriculumState= True
     
     cfg = unitree_go2_flat_env_cfg(play=play)
@@ -542,7 +542,7 @@ def unitree_go2_bridge_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             heading=None,
         ),
         bridge_goal_x=training_goal_x,
-        bridge_forward_speed_range=(0.2, 2.0),
+        bridge_forward_speed_range=(0.2, 1.5),
     )
 
     # Rewards for pure navigation
@@ -554,10 +554,10 @@ def unitree_go2_bridge_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     )
     cfg.rewards["forward_velocity_x"] = RewardTermCfg(
       func=bridge_rewards.forward_velocity_x,
-      weight=5.0, # 3.0
+      weight=5.0, # 3.0/5.0
       params={
         "goal_x": training_goal_x,
-        "max_vel": 2.0,
+        "max_vel": 1.0, # 2.0
       },
     )
     cfg.rewards["bridge_centerline_l2"] = RewardTermCfg(
@@ -581,13 +581,13 @@ def unitree_go2_bridge_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     
     cfg.rewards["bridge_success"] = RewardTermCfg(
         func=bridge_rewards.bridge_success,
-        weight=30.0,
+        weight=80.0,  # 30.0 / 60.0
         params={"goal_x": training_goal_x},
     )
     cfg.rewards["track_linear_velocity"].weight = 0.0 # 1.0/0.5
     cfg.rewards["track_angular_velocity"].weight = 0.0
     cfg.rewards["stand_still"].weight = 0.5 # 1.0/0.5
-    cfg.rewards["pose"].weight = 0.5  # 1.0/0.5
+    cfg.rewards["pose"].weight = 0.5  # 1.0/0.5/0.2
     # cfg.rewards["foot_gait"].weight = 0.0
     # cfg.rewards["foot_clearance"].weight = 0.0
     # cfg.rewards["foot_slip"].weight = 0.0
@@ -627,8 +627,9 @@ def unitree_go2_bridge_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             "bridge": BridgeTerrainCfg(
                 proportion=1.0,
                 size=(9.0, 3.0),
-                # bridge_half_width=0.1,
-                # min_bridge_half_width=0.1,
+                
+                # bridge_half_width=0.06,
+                # min_bridge_half_width=0.06,
                 
                 bridge_half_width=min_training_bridge_half_width,
                 min_bridge_half_width=min_training_bridge_half_width,
