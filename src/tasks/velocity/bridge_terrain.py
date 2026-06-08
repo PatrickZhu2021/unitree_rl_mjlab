@@ -14,7 +14,11 @@ from mjlab.terrains.terrain_generator import (
 class BridgeTerrainCfg(SubTerrainCfg):
   """Bridge terrain: start platform + narrow bridge + end platform."""
 
-  bridge_half_width: float = 0.8
+  # easiest level bridge half width
+  bridge_half_width: float = 0.6
+  # hardest level bridge half width
+  min_bridge_half_width: float = 0.2
+
   platform_half_width: float = 1.5
   height: float = 0.5
 
@@ -24,12 +28,21 @@ class BridgeTerrainCfg(SubTerrainCfg):
     spec: mujoco.MjSpec,
     rng: np.random.Generator,
   ) -> TerrainOutput:
-    del difficulty, rng
+    del rng
+
+    # difficulty: 0.0 -> easiest, 1.0 -> hardest
+    bridge_half_width = (
+      self.bridge_half_width
+      - difficulty * (self.bridge_half_width - self.min_bridge_half_width)
+    )
+
+    # safety clamp
+    bridge_half_width = max(bridge_half_width, self.min_bridge_half_width)
 
     body = spec.body("terrain")
 
     platform_a = body.add_geom(
-      name="platform_a",
+      name=f"platform_a_{difficulty}",
       type=mujoco.mjtGeom.mjGEOM_BOX,
       size=(1.0, self.platform_half_width, 0.05),
       pos=(-1.0, 0.0, self.height),
@@ -37,15 +50,15 @@ class BridgeTerrainCfg(SubTerrainCfg):
     )
 
     bridge = body.add_geom(
-      name="bridge",
+      name=f"bridge_{difficulty}",
       type=mujoco.mjtGeom.mjGEOM_BOX,
-      size=(2.0, self.bridge_half_width, 0.05),
+      size=(2.0, bridge_half_width, 0.05),
       pos=(2.0, 0.0, self.height),
       rgba=(0.5, 0.4, 0.3, 1.0),
     )
 
     platform_b = body.add_geom(
-      name="platform_b",
+      name=f"platform_b_{difficulty}",
       type=mujoco.mjtGeom.mjGEOM_BOX,
       size=(1.5, self.platform_half_width, 0.05),
       pos=(5.5, 0.0, self.height),

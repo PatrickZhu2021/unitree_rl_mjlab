@@ -8,10 +8,16 @@ from mjlab.entity import Entity
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import BuiltinSensor, ContactSensor
-from mjlab.utils.lab_api.math import quat_apply_inverse
+from mjlab.utils.lab_api.math import (
+  quat_apply_inverse,
+  quat_apply,
+)
 from mjlab.utils.lab_api.string import (
   resolve_matching_names_values,
 )
+
+from .bridge_utils import get_current_bridge_half_width
+
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -426,3 +432,244 @@ def stand_still(
             reward *= scale
     return reward
 
+# Pat's extension starts from here ##############################
+def bridge_navigation_state(
+  env: ManagerBasedRlEnv,
+  goal_x: float = 4.0,
+  bridge_half_width: float = 0.8,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Bridge navigation observation.
+
+  Returns:
+    [x_progress, y_center_error, left_edge_dist, right_edge_dist, yaw_error]
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+
+  pos = asset.data.root_link_pos_w
+  x = pos[:, 0]
+  y = pos[:, 1]
+
+  if hasattr(env.scene, "env_origins"):
+    x = x - env.scene.env_origins[:, 0]
+    y = y - env.scene.env_origins[:, 1]
+
+  # 0 at start-ish, 1 near goal.
+  x_progress = torch.clamp(x / goal_x, 0.0, 1.0)
+
+  # Signed centerline error. Positive/negative tells policy which side it is on.
+  y_center_error = y / bridge_half_width
+
+  # Distances to edges, normalized by bridge half width.
+  # If y > 0, closer to left edge depending on your coordinate convention.
+  left_edge_dist = (bridge_half_width - y) / bridge_half_width
+  right_edge_dist = (bridge_half_width + y) / bridge_half_width
+
+  # Body yaw relative to bridge/world +x.
+  yaw_error = asset.data.heading_w
+  if hasattr(env.scene, "env_origins_yaw"):
+    yaw_error = yaw_error - env.scene.env_origins_yaw
+
+  yaw_error = (yaw_error + torch.pi) % (2 * torch.pi) - torch.pi
+  yaw_error = yaw_error / torch.pi
+
+  return torch.stack(
+    [
+      x_progress,
+      y_center_error,
+      left_edge_dist,
+      right_edge_dist,
+      yaw_error,
+    ],
+    dim=-1,
+  )
+
+
+def heading_alignment_x_env_local(
+    env: ManagerBasedRlEnv,
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+    target_yaw: float = 0.0,
+) -> torch.Tensor:
+    """Penalty for robot heading not aligned with env-local +x direction."""
+    asset: Entity = env.scene[asset_cfg.name]
+    quat_w = asset.data.root_link_quat_w  # [B, 4]
+    forward_b = torch.zeros(env.num_envs, 3, device=env.device)
+    forward_b[:, 0] = 1.0
+    # Body +x axis expressed in world frame.
+    forward_w = quat_apply(quat_w, forward_b)
+    yaw_world = torch.atan2(forward_w[:, 1], forward_w[:, 0])
+    if hasattr(env.scene, "env_origins_yaw"):
+        env_yaw = env.scene.env_origins_yaw
+    else:
+        env_yaw = torch.zeros_like(yaw_world)
+    yaw_error = yaw_world - env_yaw - target_yaw
+    yaw_error = (yaw_error + torch.pi) % (2 * torch.pi) - torch.pi
+    return torch.square(yaw_error)
+
+def lateral_velocity_l2(
+  env: ManagerBasedRlEnv,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize lateral body velocity to encourage straight bridge walking."""
+  asset: Entity = env.scene[asset_cfg.name]
+  lateral_vel = asset.data.root_link_lin_vel_b[:, 1]
+  return torch.square(lateral_vel)
+
+def bridge_centerline_l2(
+  env: ManagerBasedRlEnv,
+  target_y: float = 0.0,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize base lateral deviation from bridge centerline."""
+  asset: Entity = env.scene[asset_cfg.name]
+  y = asset.data.root_link_pos_w[:, 1]
+  if hasattr(env.scene, "env_origins"):
+    y = y - env.scene.env_origins[:, 1]
+  # if env.common_step_counter % 200 == 0:
+  #   print("DEBUG centerline:", "y0=", float(y[0].detach().cpu()), "error0=", float(y[0]-target_y), "y_mean=", float(y.mean().detach().cpu()))
+  return torch.square(y - target_y)
+
+def distance_to_goal_reward(
+    env: ManagerBasedRlEnv,
+    goal_x: float = 4.0,
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+    """
+    Reward inversely proportional to distance from goal.
+    Maximum at goal_x; decreases as robot moves away.
+    """
+    asset: Entity = env.scene[asset_cfg.name]
+    x = asset.data.root_link_pos_w[:, 0]
+    if hasattr(env.scene, "env_origins"):
+        x = x - env.scene.env_origins[:, 0]
+
+    # distance to goal
+    dist = torch.abs(goal_x - x)
+
+    # reward: smaller distance → larger reward
+    reward = torch.clamp(1.0 - dist/goal_x, min=0.0)
+    return reward
+  
+  
+
+def bridge_success(
+  env: ManagerBasedRlEnv,
+  goal_x: float = 4.0,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Reward reaching the end platform in env-local x."""
+  asset: Entity = env.scene[asset_cfg.name]
+  x = asset.data.root_link_pos_w[:, 0]
+
+  if hasattr(env.scene, "env_origins"):
+    x = x - env.scene.env_origins[:, 0]
+
+  return (x >= goal_x).float()
+
+def foot_on_bridge_lateral(
+  env: ManagerBasedRlEnv,
+  bridge_half_width: float = 0.8,
+  margin: float = 0.05,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize feet outside bridge lateral bounds.
+
+  First version ignores x region and only checks y distance.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  foot_y = asset.data.site_pos_w[:, asset_cfg.site_ids, 1]  # [B, 4]
+  if hasattr(env.scene, "env_origins"):
+    foot_y = foot_y - env.scene.env_origins[:, 1].unsqueeze(1)
+  excess = torch.clamp(torch.abs(foot_y) - (bridge_half_width - margin), min=0.0)
+  return torch.sum(torch.square(excess), dim=1)
+
+def forward_velocity_x(
+  env: ManagerBasedRlEnv,
+  goal_x: float = 4.0,
+  max_vel: float = 1.0,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+):
+    asset: Entity = env.scene[asset_cfg.name]
+    x = asset.data.root_link_pos_w[:, 0]
+
+    if hasattr(env.scene, "env_origins"):
+        x = x - env.scene.env_origins[:, 0]
+    vx = asset.data.root_link_lin_vel_w[:, 0]
+    mask = x < goal_x
+    reward = torch.clamp(vx, 0.0, max_vel) * mask.float()
+    return reward
+  
+def stop_after_goal(
+    env: ManagerBasedRlEnv,
+    goal_x: float = 4.0,
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+    """
+    Penalize linear and lateral velocity after reaching goal_x.
+    Agent will be rewarded for stopping once past goal.
+    """
+    asset: Entity = env.scene[asset_cfg.name]
+
+    # Robot world-frame position
+    x = asset.data.root_link_pos_w[:, 0]
+    if hasattr(env.scene, "env_origins"):
+        x = x - env.scene.env_origins[:, 0]
+
+    # World-frame linear velocity
+    vxy = asset.data.root_link_lin_vel_w[:, :2]  # [vx, vy]
+    speed_sq = torch.sum(torch.square(vxy), dim=1)  # squared speed
+
+    # Mask: only penalize if past goal
+    mask = x >= goal_x
+    reward = speed_sq * mask.float()  # negative weight in cfg
+
+    return reward 
+  
+def is_terminated_no_goal(
+  env: ManagerBasedRlEnv,
+  goal_x: float = 5.0,
+) -> torch.Tensor:
+  """Penalize terminations except successful reached_goal termination."""
+
+  terminated = env.termination_manager.terminated
+
+  asset: Entity = env.scene["robot"]
+  x = asset.data.root_link_pos_w[:, 0]
+
+  if hasattr(env.scene, "env_origins"):
+    x = x - env.scene.env_origins[:, 0]
+
+  reached_goal = x >= goal_x
+
+  return (terminated & (~reached_goal)).float()
+
+
+def bridge_edge_penalty(
+  env: ManagerBasedRlEnv,
+  safe_half_width: float = 0.55,
+  edge_margin: float = 0.05,
+  use_curriculum_width: bool = False,
+  max_bridge_half_width: float = 0.8,
+  min_bridge_half_width: float = 0.3,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  asset: Entity = env.scene[asset_cfg.name]
+
+  y = asset.data.root_link_pos_w[:, 1]
+
+  if hasattr(env.scene, "env_origins"):
+    y = y - env.scene.env_origins[:, 1]
+
+  if use_curriculum_width:
+    current_half_width = get_current_bridge_half_width(
+      env,
+      max_bridge_half_width=max_bridge_half_width,
+      min_bridge_half_width=min_bridge_half_width,
+    )
+    safe_width = torch.clamp(current_half_width - edge_margin, min=0.02)
+  else:
+    safe_width = torch.full_like(y, safe_half_width)
+
+  excess = torch.clamp(torch.abs(y) - safe_width, min=0.0)
+
+  return torch.square(excess)

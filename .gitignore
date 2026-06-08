@@ -11,4 +11,19 @@ deploy/robots/g1_23dof/build
 deploy/robots/r1/build
 deploy/robots/a2/build
 src/assets/motions/g1/dance1_subject2.npz
-simulate/build
+simulate/buildMiniforge3-Linux-x86_64.sh
+
+# local installers
+Miniforge3-Linux-x86_64.sh
+
+# python cache
+__pycache__/
+*.pyc
+
+# RL training artifacts
+logs/
+wandb/
+runs/
+*.pt
+*.pth
+*.onnx

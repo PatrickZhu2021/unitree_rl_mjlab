@@ -13,6 +13,7 @@ from mjlab.utils.lab_api.math import (
   matrix_from_quat,
   quat_apply,
   wrap_to_pi,
+  quat_apply_inverse
 )
 
 if TYPE_CHECKING:
@@ -280,3 +281,58 @@ class UniformVelocityCommandCfg(CommandTermCfg):
         "The velocity command has heading commands active (heading_command=True) but "
         "the `ranges.heading` parameter is set to None."
       )
+
+
+class BridgeVelocityCommand(UniformVelocityCommand):
+  cfg: BridgeVelocityCommandCfg
+
+  def __init__(self, cfg: BridgeVelocityCommandCfg, env: ManagerBasedRlEnv):
+    super().__init__(cfg, env)
+    self.bridge_forward_speed = torch.zeros(self.num_envs, device=self.device)
+
+  def _resample_command(self, env_ids: torch.Tensor) -> None:
+    """Sample one forward speed per env, no random y/yaw command."""
+    self.is_heading_env[env_ids] = False
+    self.is_standing_env[env_ids] = False
+
+    r = torch.empty(len(env_ids), device=self.device)
+    self.bridge_forward_speed[env_ids] = r.uniform_(
+      self.cfg.bridge_forward_speed_range[0],
+      self.cfg.bridge_forward_speed_range[1],
+    )
+
+    self.vel_command_b[env_ids, 0] = self.bridge_forward_speed[env_ids]
+    self.vel_command_b[env_ids, 1] = 0.0
+    self.vel_command_b[env_ids, 2] = 0.0
+
+  def _update_command(self) -> None:
+    asset = self.robot
+
+    x = asset.data.root_link_pos_w[:, 0]
+    if hasattr(self._env.scene, "env_origins"):
+      x = x - self._env.scene.env_origins[:, 0]
+
+    before_goal = x < self.cfg.bridge_goal_x
+
+    self.vel_command_b[:, 0] = self.bridge_forward_speed * before_goal.float()
+    self.vel_command_b[:, 1] = 0.0
+    self.vel_command_b[:, 2] = 0.0
+
+    # if self._env.common_step_counter % 200 == 0:
+      # print(
+      #   "DEBUG Bridge cmd:",
+      #   "x0 =", float(x[0].detach().cpu()),
+      #   "x_mean =", float(x.mean().detach().cpu()),
+      #   "x_max =", float(x.max().detach().cpu()),
+      #   "cmd0 =", self.vel_command_b[0].detach().cpu().tolist(),
+      #   "cmd_mean =", self.vel_command_b.mean(dim=0).detach().cpu().tolist(),
+      #   "speed_min =", float(self.bridge_forward_speed.min().detach().cpu()),
+      #   "speed_max =", float(self.bridge_forward_speed.max().detach().cpu()),
+      # )
+    
+@dataclass(kw_only=True)
+class BridgeVelocityCommandCfg(UniformVelocityCommandCfg):
+  bridge_goal_x: float = 4.0
+  bridge_forward_speed_range: tuple[float, float] = (0.0, 2.0)
+  def build(self, env: ManagerBasedRlEnv) -> BridgeVelocityCommand:
+    return BridgeVelocityCommand(self, env)

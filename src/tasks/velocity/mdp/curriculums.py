@@ -26,6 +26,10 @@ class RewardWeightStage(TypedDict):
   step: int
   weight: float
 
+class BridgeNarrowStage(TypedDict):
+  step: int
+  max_init_terrain_level: int | None
+
 
 def terrain_levels_vel(
   env: ManagerBasedRlEnv,
@@ -105,3 +109,38 @@ def reward_weight(
     if env.common_step_counter > stage["step"]:
       reward_term_cfg.weight = stage["weight"]
   return torch.tensor([reward_term_cfg.weight])
+
+
+def bridge_narrow(
+    env: "ManagerBasedRlEnv",
+    env_ids: torch.Tensor,
+    goal_x: float = 5.0,
+    success_ratio: float = 1.0,  #0.85
+    move_down_ratio: float = 0.25,
+    asset_cfg: SceneEntityCfg = _DEFAULT_SCENE_CFG,
+) -> torch.Tensor:
+    """
+    Curriculum for bridge: widen → narrow or two bridges → merge.
+
+    Moves each env's terrain level up if agent reaches goal_x*success_ratio,
+    down if agent makes very little progress.
+    """
+    asset = env.scene[asset_cfg.name]
+    terrain = env.scene.terrain
+    assert terrain is not None
+    terrain_generator = terrain.cfg.terrain_generator
+    assert terrain_generator is not None
+
+    x = asset.data.root_link_pos_w[env_ids, 0]
+    if hasattr(env.scene, "env_origins"):
+        x = x - env.scene.env_origins[env_ids, 0]
+
+    # Success: move up (harder/narrower)
+    move_up = x > goal_x * success_ratio
+    # Failure / little progress: move down (easier/wider)
+    move_down = x < goal_x * move_down_ratio
+    move_down = move_down & (~move_up)
+
+    terrain.update_env_origins(env_ids, move_up, move_down)
+
+    return torch.mean(terrain.terrain_levels.float())
