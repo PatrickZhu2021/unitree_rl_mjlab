@@ -16,7 +16,10 @@ from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 from mjlab.managers.observation_manager import ObservationTermCfg
 from mjlab.terrains.terrain_generator import TerrainGeneratorCfg
-from src.tasks.velocity.bridge_terrain import BridgeTerrainCfg
+from src.tasks.velocity.bridge_terrain import (
+  BridgeTerrainCfg,
+  ZigZagRiskyBridgeTerrainCfg,
+  )
 import src.tasks.velocity.mdp.terminations as bridge_terminations
 
 from src.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
@@ -24,9 +27,14 @@ import src.tasks.velocity.mdp.rewards as bridge_rewards
 from src.tasks.velocity.mdp.velocity_command import BridgeVelocityCommandCfg
 
 import src.tasks.velocity.mdp.observations as bridge_observations
+import src.tasks.velocity.mdp.path_observations as path_observations
 
 from mjlab.managers.curriculum_manager import CurriculumTermCfg
 import src.tasks.velocity.mdp.curriculums as bridge_curriculums
+
+import src.tasks.velocity.mdp.path_rewards as path_rewards
+import src.tasks.velocity.mdp.path_terminations as path_terminations
+import src.tasks.velocity.mdp.path_commands as path_commands
 
 TerrainType = Literal["rough", "obstacles"]
 
@@ -644,3 +652,229 @@ def unitree_go2_bridge_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       cfg.terminations.pop("reached_goal", None)
       
     return cfg
+  
+  ## below functions are for zigzag bridge training
+  
+def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Flat general locomotion with navigation observation.
+
+  Use this to pretrain a new general gait policy with the same obs dimension
+  as the later navigation/bridge task.
+  """
+  zigzag_bridge_half_width = 0.50
+  
+  cfg = unitree_go2_flat_nav_env_cfg(play=play)
+
+  # This is still a velocity-tracking general policy.
+  # Do not add bridge/navigation rewards here.
+  cfg.rewards["track_linear_velocity"].weight = 1.0
+  cfg.rewards["track_angular_velocity"].weight = 1.0
+  cfg.rewards["track_angular_velocity"].params["std"] = 0.5
+
+  # Keep normal walking gait.
+  cfg.rewards["pose"].weight = 0.5
+  cfg.rewards["foot_gait"].weight = 0.5
+  cfg.rewards["foot_clearance"].weight = -0.2
+  cfg.rewards["foot_slip"].weight = -0.1
+  cfg.rewards["action_rate_l2"].weight = -0.02
+
+  # Make it actually walk forward often enough.
+  twist_cmd = cfg.commands["twist"]
+  assert isinstance(twist_cmd, UniformVelocityCommandCfg)
+  twist_cmd.ranges.lin_vel_x = (0.2, 0.8)
+  twist_cmd.ranges.lin_vel_y = (-0.3, 0.3)
+  twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+
+  if not play:
+    cfg.scene.num_envs = 512
+    cfg.events.pop("push_robot", None)
+
+  if play:
+    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
+    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
+    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+
+  return cfg
+
+
+def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Debug environment for testing ZigZagRiskyBridgeTerrainCfg generation.
+
+  This config is only for checking whether the terrain can be generated and
+  visualized correctly. It is not a final training config.
+  """
+  zigzag_bridge_half_width = 0.50
+  
+  cfg = unitree_go2_flat_env_cfg(play=play)
+
+  cfg.episode_length_s = int(1e9 if play else 30)
+  
+  # observations tunning
+  
+  cfg.observations["actor"].terms.pop("command", None)
+  cfg.observations["critic"].terms.pop("command", None)
+  cfg.observations["actor"].terms["path_speed_command"] = ObservationTermCfg(
+    func=path_commands.constant_path_speed_command,
+    params={
+      "desired_speed": 0.4,
+      "speed_scale": 1.0,
+    },
+  )
+
+  cfg.observations["critic"].terms["path_speed_command"] = ObservationTermCfg(
+    func=path_commands.constant_path_speed_command,
+    params={
+      "desired_speed": 0.4,
+      "speed_scale": 1.0,
+    },
+  )
+  
+  cfg.observations["actor"].terms["zigzag_lookahead_path_prior"] = ObservationTermCfg(
+    func=path_observations.zigzag_lookahead_path_prior,
+    params={
+      "bridge_half_width": zigzag_bridge_half_width,
+      "turn_dist_scale": 2.0,
+    },
+  )
+
+  cfg.observations["critic"].terms["zigzag_lookahead_path_prior"] = ObservationTermCfg(
+    func=path_observations.zigzag_lookahead_path_prior,
+    params={
+      "bridge_half_width": zigzag_bridge_half_width,
+      "turn_dist_scale": 2.0,
+    },
+  )
+
+  zigzag_terrain_cfg = TerrainGeneratorCfg(
+    seed=0,
+    curriculum=False,
+    size=(9.0, 5.0),
+    border_width=0.0,
+    num_rows=1,
+    num_cols=1,
+    color_scheme="none",
+    sub_terrains={
+      "zigzag_risky_bridge": ZigZagRiskyBridgeTerrainCfg(
+        proportion=1.0,
+        size=(9.0, 5.0),
+
+        bridge_half_width=zigzag_bridge_half_width,
+        min_bridge_half_width=0.30,
+        platform_half_width=1.5,
+        piece_length=0.35,
+
+        # Debug stage: first test pure zigzag terrain.
+        enable_gap=False,
+        enable_height_step=False,
+        enable_slope= False,
+
+        # Keep these configured but disabled for now.
+        gap_probability=0.2,
+        min_gap_length=0.08,
+        max_gap_length=0.20,
+        step_probability=0.2,
+        min_step_height=0.03,
+        max_step_height=0.10,
+      )
+    },
+  )
+
+  assert cfg.scene.terrain is not None
+  cfg.scene.terrain.terrain_type = "generator"
+  cfg.scene.terrain.terrain_generator = zigzag_terrain_cfg
+  cfg.scene.terrain.max_init_terrain_level = 0
+
+  # No terrain curriculum or random terrain while debugging geometry.
+  cfg.curriculum.pop("terrain_levels", None)
+  cfg.curriculum.pop("bridge_narrow", None)
+  cfg.curriculum.pop("command_vel", None)
+  cfg.events.pop("randomize_terrain", None)
+
+  # Put robot on the start platform.
+  # The ZigZagRiskyBridgeTerrainCfg origin is approximately:
+  # [start_x - 0.4, start_y, start_z + 0.5]
+  cfg.events["reset_base"].params["pose_range"] = {
+    "x": (-0.05, 0.05),
+    "y": (-0.05, 0.05),
+    "z": (0.0, 0.0),
+    "yaw": (0.0, 0.0),
+  }
+
+  
+  cfg.rewards["track_linear_velocity"].weight = 0.0
+  cfg.rewards["track_angular_velocity"].weight = 0.0
+  
+  # Path-following rewards.
+  cfg.rewards["track_path_speed"] = RewardTermCfg(
+    func=path_rewards.track_path_speed,
+    weight=2.0,
+    params={
+      "desired_speed": 0.4,
+      "std": 0.25,
+    },
+  )
+
+  cfg.rewards["path_centerline_l2"] = RewardTermCfg(
+    func=path_rewards.path_centerline_l2,
+    weight=-0.5,
+  )
+
+  cfg.rewards["path_edge_penalty"] = RewardTermCfg(
+    func=path_rewards.path_edge_penalty,
+    weight=-5.0,
+    params={
+      "bridge_half_width": zigzag_bridge_half_width,
+      "edge_margin": 0.05,
+    },
+  )
+
+  cfg.rewards["path_heading_alignment"] = RewardTermCfg(
+    func=path_rewards.path_heading_alignment,
+    weight=-0.3,
+  )
+
+  cfg.rewards["path_success"] = RewardTermCfg(
+    func=path_rewards.path_success,
+    weight=50.0,
+    params={
+      "success_progress": 0.98,
+    },
+  )
+
+  cfg.rewards["is_terminated"] = RewardTermCfg(
+    func=path_rewards.is_terminated_no_path_goal,
+    weight=-200.0,
+    params={
+      "success_progress": 0.98,
+    },
+  )
+  
+  # For terrain visualization, do not terminate at goal.
+  cfg.terminations.pop("reached_goal", None)
+  
+  cfg.terminations["reached_path_goal"] = TerminationTermCfg(
+  func=path_terminations.reached_path_goal,
+  params={
+    "success_progress": 0.98,
+  },
+  )
+
+  # Keep command simple. You just want to move the robot/camera and inspect terrain.
+
+  if not play:
+    cfg.terminations.pop("reached_goal", None)
+    cfg.scene.num_envs = 16
+    cfg.events.pop("push_robot", None)
+
+  if play:
+    twist_cmd = cfg.commands["twist"]
+    assert isinstance(twist_cmd, UniformVelocityCommandCfg)
+    twist_cmd.ranges.lin_vel_x = (-0.2, 0.5)
+    twist_cmd.ranges.lin_vel_y = (-0.1, 0.1)
+    twist_cmd.ranges.ang_vel_z = (-0.1, 0.1)
+    cfg.observations["actor"].enable_corruption = False
+    
+    cfg.events.pop("push_robot", None)
+    cfg.curriculum = {}
+
+  return cfg
