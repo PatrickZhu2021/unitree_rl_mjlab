@@ -656,20 +656,114 @@ def unitree_go2_bridge_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   ## below functions are for zigzag bridge training
   
 def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Flat general locomotion with navigation observation.
+  """Flat path-navigation pretrain with same obs structure as zigzag bridge.
 
-  Use this to pretrain a new general gait policy with the same obs dimension
-  as the later navigation/bridge task.
+  Purpose:
+    Pretrain Go2 to walk using:
+      proprioception + path_speed_command + zigzag_lookahead_path_prior
+
+    This is obs-compatible with Unitree-Go2-ZigZagBridge-Debug.
   """
-  zigzag_bridge_half_width = 0.50
-  
-  cfg = unitree_go2_flat_nav_env_cfg(play=play)
+  zigzag_bridge_half_width = 0.5
 
-  # This is still a velocity-tracking general policy.
-  # Do not add bridge/navigation rewards here.
-  cfg.rewards["track_linear_velocity"].weight = 1.0
-  cfg.rewards["track_angular_velocity"].weight = 1.0
-  cfg.rewards["track_angular_velocity"].params["std"] = 0.5
+  # Build base flat cfg first.
+  cfg = unitree_go2_flat_env_cfg(play=play)
+
+  # Remove traditional twist command observation.
+  # We keep cfg.commands["twist"] only if the framework expects a command manager,
+  # but actor/critic should not observe it.
+  cfg.observations["actor"].terms.pop("command", None)
+  cfg.observations["critic"].terms.pop("command", None)
+
+  # High-level path speed command.
+  cfg.observations["actor"].terms["path_speed_command"] = ObservationTermCfg(
+    func=path_commands.constant_path_speed_command,
+    params={
+      "desired_speed": 0.4,
+      "speed_scale": 1.0,
+    },
+  )
+
+  cfg.observations["critic"].terms["path_speed_command"] = ObservationTermCfg(
+    func=path_commands.constant_path_speed_command,
+    params={
+      "desired_speed": 0.4,
+      "speed_scale": 1.0,
+    },
+  )
+
+  # Same lookahead path prior as bridge task.
+  cfg.observations["actor"].terms["zigzag_lookahead_path_prior"] = ObservationTermCfg(
+    func=path_observations.zigzag_lookahead_path_prior,
+    params={
+      "bridge_half_width": zigzag_bridge_half_width,
+      "turn_dist_scale": 2.0,
+    },
+  )
+
+  cfg.observations["critic"].terms["zigzag_lookahead_path_prior"] = ObservationTermCfg(
+    func=path_observations.zigzag_lookahead_path_prior,
+    params={
+      "bridge_half_width": zigzag_bridge_half_width,
+      "turn_dist_scale": 2.0,
+    },
+  )
+
+  # Do NOT use traditional velocity tracking here.
+  # Actor cannot see twist command, so these must be zero.
+  cfg.rewards["track_linear_velocity"].weight = 0.0
+  cfg.rewards["track_angular_velocity"].weight = 0.0
+
+  # Path navigation rewards on flat ground.
+  cfg.rewards["track_path_speed"] = RewardTermCfg(
+    func=path_rewards.track_path_speed,
+    weight=1.0,
+    params={
+      "desired_speed": 1.0,
+      "std": 0.25,
+    },
+  )
+
+  cfg.rewards["path_progress"] = RewardTermCfg(
+    func=path_rewards.path_progress_reward,
+    weight=30.0,
+    params={
+      "max_delta_s": 0.05,
+      "reset_jump_threshold": 0.30,
+      "progress_scale": 1.0,
+    },
+  )
+
+  cfg.rewards["path_max_completion"] = RewardTermCfg(
+    func=path_rewards.path_max_completion,
+    weight=2.0,
+  )
+
+  cfg.rewards["path_centerline_l2"] = RewardTermCfg(
+    func=path_rewards.path_centerline_l2,
+    weight=-0.5,
+  )
+
+  cfg.rewards["path_heading_alignment"] = RewardTermCfg(
+    func=path_rewards.path_heading_alignment,
+    weight=-0.3,
+  )
+
+  cfg.rewards["path_success"] = RewardTermCfg(
+    func=path_rewards.path_success,
+    weight=30.0,
+    params={
+      "success_progress": 0.98,
+    },
+  )
+
+  cfg.rewards["is_terminated"] = RewardTermCfg(
+    func=path_rewards.is_terminated_no_path_goal,
+    weight=-100.0,
+    params={
+      "success_progress": 0.98,
+    },
+  )
 
   # Keep normal walking gait.
   cfg.rewards["pose"].weight = 0.5
@@ -678,24 +772,21 @@ def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnv
   cfg.rewards["foot_slip"].weight = -0.1
   cfg.rewards["action_rate_l2"].weight = -0.02
 
-  # Make it actually walk forward often enough.
-  twist_cmd = cfg.commands["twist"]
-  assert isinstance(twist_cmd, UniformVelocityCommandCfg)
-  twist_cmd.ranges.lin_vel_x = (0.2, 0.8)
-  twist_cmd.ranges.lin_vel_y = (-0.3, 0.3)
-  twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+  # Use path-goal termination instead of old x-goal termination.
+  cfg.terminations.pop("reached_goal", None)
+
+  cfg.terminations["reached_path_goal"] = TerminationTermCfg(
+    func=path_terminations.reached_path_goal,
+    params={
+      "success_progress": 0.98,
+    },
+  )
 
   if not play:
     cfg.scene.num_envs = 512
     cfg.events.pop("push_robot", None)
 
-  if play:
-    twist_cmd.ranges.lin_vel_x = (-0.5, 1.0)
-    twist_cmd.ranges.lin_vel_y = (-0.5, 0.5)
-    twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
-
   return cfg
-
 
 def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Debug environment for testing ZigZagRiskyBridgeTerrainCfg generation.
@@ -807,7 +898,7 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
   # Path-following rewards.
   cfg.rewards["track_path_speed"] = RewardTermCfg(
     func=path_rewards.track_path_speed,
-    weight=2.0,
+    weight=1.0, # 2.0
     params={
       "desired_speed": 0.4,
       "std": 0.25,
@@ -835,10 +926,15 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
 
   cfg.rewards["path_success"] = RewardTermCfg(
     func=path_rewards.path_success,
-    weight=50.0,
+    weight=80.0,  # 50.0
     params={
       "success_progress": 0.98,
     },
+  )
+
+  cfg.rewards["path_max_completion"] = RewardTermCfg(
+    func=path_rewards.path_max_completion,
+    weight=5.0,
   )
 
   cfg.rewards["is_terminated"] = RewardTermCfg(
@@ -849,9 +945,17 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
     },
   )
   
-  # For terrain visualization, do not terminate at goal.
-  cfg.terminations.pop("reached_goal", None)
+  cfg.rewards["path_progress"] = RewardTermCfg(
+    func=path_rewards.path_progress_reward,
+    weight=50.0,  # 30.0
+    params={
+      "max_delta_s": 0.05,
+      "reset_jump_threshold": 0.30,
+      "progress_scale": 1.0,
+    },
+  )
   
+  # For terrain visualization, do not terminate at goal.  
   cfg.terminations["reached_path_goal"] = TerminationTermCfg(
   func=path_terminations.reached_path_goal,
   params={
@@ -867,6 +971,7 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
     cfg.events.pop("push_robot", None)
 
   if play:
+    cfg.terminations.pop("reached_goal", None)
     twist_cmd = cfg.commands["twist"]
     assert isinstance(twist_cmd, UniformVelocityCommandCfg)
     twist_cmd.ranges.lin_vel_x = (-0.2, 0.5)

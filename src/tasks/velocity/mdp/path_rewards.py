@@ -103,15 +103,37 @@ def path_forward_velocity(
     return torch.clamp(forward_vel, min=0.0, max=max_vel)
 
 
-def path_progress(
+def path_completion(
     env: "ManagerBasedRlEnv",
     waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_WAYPOINTS,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-    """Return normalized path progress [0, 1]."""
+    """Reward continuous path completion ratio in [0, 1]."""
     base_xy = _base_xy_env_local(env, asset_cfg)
     path_info = project_points_to_path(base_xy, waypoints)
     return path_info["progress"]
+
+def path_max_completion(
+    env: "ManagerBasedRlEnv",
+    waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_WAYPOINTS,
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+    """Max achieved path completion ratio in current episode."""
+    base_xy = _base_xy_env_local(env, asset_cfg)
+    path_info = project_points_to_path(base_xy, waypoints)
+
+    path_s = path_info["path_s"].detach()
+    path_length = path_info["path_length"]
+
+    if (
+        not hasattr(env, "_max_path_s")
+        or env._max_path_s.shape != path_s.shape
+        or env._max_path_s.device != path_s.device
+    ):
+        env._max_path_s = path_s.clone()
+
+    max_completion = env._max_path_s / path_length.clamp_min(1e-6)
+    return torch.clamp(max_completion, 0.0, 1.0)
 
 
 def path_success(
@@ -120,8 +142,13 @@ def path_success(
     waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_WAYPOINTS,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-    """Sparse success reward when near path end."""
-    progress = path_progress(env, waypoints, asset_cfg)
+    """Reward reaching the end of the reference path."""
+    asset: Entity = env.scene[asset_cfg.name]
+
+    base_xy = asset.data.root_link_pos_w[:, :2] - env.scene.env_origins[:, :2]
+    path_info = project_points_to_path(base_xy, waypoints)
+
+    progress = path_info["progress"]
     return (progress >= success_progress).float()
 
 
@@ -131,9 +158,15 @@ def is_terminated_no_path_goal(
     waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_WAYPOINTS,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-    """Penalize termination unless path goal is reached."""
-    progress = path_progress(env, waypoints, asset_cfg)
+    """Penalize terminations except successful path-goal termination."""
+    asset: Entity = env.scene[asset_cfg.name]
+
+    base_xy = asset.data.root_link_pos_w[:, :2] - env.scene.env_origins[:, :2]
+    path_info = project_points_to_path(base_xy, waypoints)
+
+    progress = path_info["progress"]
     reached_goal = progress >= success_progress
+
     return env.termination_manager.terminated & (~reached_goal)
 
 def track_path_speed(
@@ -160,3 +193,45 @@ def track_path_speed(
 
     error = torch.square(path_vel - desired_speed)
     return torch.exp(-error / (std * std))
+
+def path_progress_reward(
+    env: "ManagerBasedRlEnv",
+    max_delta_s: float = 0.05,
+    reset_jump_threshold: float = 0.30,
+    progress_scale: float = 1.0,
+    waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_WAYPOINTS,
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+    """Reward monotonic forward progress along the reference path.
+
+    Uses per-env max achieved path_s instead of raw path_s difference.
+    This avoids reward hacking near corners where nearest-segment projection can jump.
+    """
+    base_xy = _base_xy_env_local(env, asset_cfg)
+    path_info = project_points_to_path(base_xy, waypoints)
+    path_s = path_info["path_s"].detach()
+
+    if (
+        not hasattr(env, "_max_path_s")
+        or env._max_path_s.shape != path_s.shape
+        or env._max_path_s.device != path_s.device
+    ):
+        env._max_path_s = path_s.clone()
+        return torch.zeros_like(path_s)
+
+    old_max_path_s = env._max_path_s
+
+    # Detect reset / teleport: if current path_s is far behind previous max,
+    # treat it as new episode and reinitialize memory for those envs.
+    reset_like = path_s < (old_max_path_s - reset_jump_threshold)
+
+    old_max_path_s = torch.where(reset_like, path_s, old_max_path_s)
+
+    new_max_path_s = torch.maximum(old_max_path_s, path_s)
+    delta_s = new_max_path_s - old_max_path_s
+
+    delta_s = torch.clamp(delta_s, min=0.0, max=max_delta_s)
+
+    env._max_path_s = new_max_path_s.clone()
+
+    return delta_s * progress_scale
