@@ -13,6 +13,7 @@ from src.tasks.velocity.mdp.path_utils import (
     project_points_to_path,
     root_yaw_from_quat_wxyz,
     sample_lookahead_path_points,
+    sample_path_by_s,
     wrap_to_pi,
 )
 
@@ -86,6 +87,8 @@ def zigzag_lookahead_path_prior(
     lookahead_distances: Tuple[float, ...] = (0.3, 0.6, 0.9, 1.2),
     xy_scale: float = 1.0,
     z_scale: float = 0.3,
+    tangent_lookahead_distance: float = 0.0,
+    include_heading_features: bool = True,
     waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_WAYPOINTS,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
@@ -134,7 +137,17 @@ def zigzag_lookahead_path_prior(
     distance_to_next_turn = path_info["distance_to_next_turn"]
     next_turn_angle = path_info["next_turn_angle"]
 
+    if tangent_lookahead_distance > 0.0:
+        tangent_sample = sample_path_by_s(
+            path_s + tangent_lookahead_distance,
+            waypoints=waypoints,
+        )
+        tangent_yaw = tangent_sample["tangent_yaw"]
+
     heading_error = wrap_to_pi(base_yaw - tangent_yaw)
+    if not include_heading_features:
+        heading_error = torch.zeros_like(heading_error)
+        next_turn_angle = torch.zeros_like(next_turn_angle)
 
     left_edge_dist = bridge_half_width - lateral_error
     right_edge_dist = bridge_half_width + lateral_error
@@ -180,6 +193,8 @@ def zigzag_lookahead_path_prior(
     dz = target_z - base_z[:, None]
 
     lookahead_heading_error = wrap_to_pi(target_tangent_yaw - base_yaw[:, None])
+    if not include_heading_features:
+        lookahead_heading_error = torch.zeros_like(lookahead_heading_error)
 
     lookahead_prior = torch.stack(
         [

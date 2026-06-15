@@ -825,6 +825,10 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
     params={
       "bridge_half_width": zigzag_bridge_half_width,
       "turn_dist_scale": 2.0,
+      "lookahead_distances": (0.20, 0.40, 0.60, 0.80),
+      "tangent_lookahead_distance": 0.0,
+      "include_heading_features": False,
+      "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
     },
   )
 
@@ -833,6 +837,10 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
     params={
       "bridge_half_width": zigzag_bridge_half_width,
       "turn_dist_scale": 2.0,
+      "lookahead_distances": (0.20, 0.40, 0.60, 0.80),
+      "tangent_lookahead_distance": 0.0,
+      "include_heading_features": False,
+      "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
     },
   )
 
@@ -858,6 +866,7 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
         enable_gap=False,
         enable_height_step=False,
         enable_slope= False,
+        path_waypoints=path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
 
         # Keep these configured but disabled for now.
         gap_probability=0.2,
@@ -898,18 +907,29 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
   # Path-following rewards.
   cfg.rewards["track_path_speed"] = RewardTermCfg(
     func=path_rewards.path_forward_velocity_exp,
-    weight=3.0,
+    weight=4.0,
     params={
-      "desired_speed": 0.4,
-      "std": 0.20,
+      "desired_speed": 0.5,
+      "std": 0.30,
       "backward_speed_tolerance": 0.03,
-      "body_lateral_gate_std": 0.15,
+      # Heading gates are disabled during bootstrap so the policy cannot get
+      # stuck optimizing heading in place before learning forward motion.
+      "heading_gate_std": None,
+      # Keep this off for bootstrap. A hard body-forward gate can remove too
+      # much speed reward before the policy has learned a forward gait.
+      "centerline_gate_std": 0.60,
+      "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
+      "body_forward_gate": False,
+      "body_lateral_gate_std": 0.30,
     },
   )
 
   cfg.rewards["path_centerline_l2"] = RewardTermCfg(
     func=path_rewards.path_centerline_l2,
-    weight=-0.5,
+    weight=-2.0,
+    params={
+      "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
+    },
   )
 
   cfg.rewards["path_edge_penalty"] = RewardTermCfg(
@@ -921,10 +941,10 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
     },
   )
 
-  cfg.rewards["path_heading_alignment"] = RewardTermCfg(
-    func=path_rewards.path_heading_alignment,
-    weight=0.0,
-  )
+  # cfg.rewards["path_heading_alignment"] = RewardTermCfg(
+  #   func=path_rewards.path_heading_alignment,
+  #   weight=0.0,
+  # )
 
   # cfg.rewards["path_lookahead_heading"] = RewardTermCfg(
   #   func=path_rewards.path_lookahead_heading_reward,
@@ -935,10 +955,20 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
   #   },
   # )
 
-  cfg.rewards["path_blended_heading_l2"] = RewardTermCfg(
-    func=path_rewards.path_blended_heading_l2,
-    weight=-1.0,
+  # cfg.rewards["path_blended_heading_l2"] = RewardTermCfg(
+  #   func=path_rewards.path_blended_heading_l2,
+  #   weight=0.0,
+  #   params={
+  #     "turn_blend_distance": 0.03,
+  #     "heading_waypoints": path_rewards.DEFAULT_ZIGZAG_CONTROL_WAYPOINTS,
+  #   },
+  # )
+
+  cfg.rewards["path_turn_heading_l2"] = RewardTermCfg(
+    func=path_rewards.path_turn_heading_l2,
+    weight=0.0,
     params={
+      "turn_gate_distance": 0.25,
       "turn_blend_distance": 0.15,
       "heading_waypoints": path_rewards.DEFAULT_ZIGZAG_CONTROL_WAYPOINTS,
     },
@@ -946,19 +976,23 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
 
   cfg.rewards["path_lateral_velocity_l2"] = RewardTermCfg(
     func=path_rewards.path_lateral_velocity_l2,
-    weight=-0.8,
+    weight=-0.25,
+    params={
+      "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
+    },
   )
 
   cfg.rewards["body_lateral_velocity_l2"] = RewardTermCfg(
     func=path_rewards.body_lateral_velocity_l2,
-    weight=-2.0,
+    weight=-0.10,
   )
 
   cfg.rewards["path_success"] = RewardTermCfg(
     func=path_rewards.path_success,
-    weight=80.0,  # 50.0
+    weight=100.0,
     params={
       "success_progress": 0.98,
+      "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
     },
   )
 
@@ -972,31 +1006,36 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
     weight=-200.0,
     params={
       "success_progress": 0.98,
+      "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
     },
   )
   
   cfg.rewards["path_progress"] = RewardTermCfg(
     func=path_rewards.path_progress_reward,
-    weight=120.0,
+    weight=100.0,
     params={
       "max_delta_s": 0.05,
       "reset_jump_threshold": 0.30,
+      "max_forward_jump": 0.35,
       "progress_scale": 1.0,
+      "heading_gate_std": None,
+      "centerline_gate_std": 0.60,
+      "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
     },
   )
 
-  cfg.rewards["path_no_progress"] = RewardTermCfg(
-    func=path_rewards.path_no_progress_penalty,
-    weight=-0.05,
-    params={
-      "target_delta_s": 0.004,
-      "reset_jump_threshold": 0.30,
-    },
-  )
+  # cfg.rewards["path_no_progress"] = RewardTermCfg(
+  #   func=path_rewards.path_no_progress_penalty,
+  #   weight=0.0,
+  #   params={
+  #     "target_delta_s": 0.004,
+  #     "reset_jump_threshold": 0.30,
+  #   },
+  # )
 
   cfg.rewards["path_stay_alive"] = RewardTermCfg(
     func=path_rewards.path_stay_alive_penalty,
-    weight=-0.02,
+    weight=-0.01,
   )
 
   # For terrain visualization, do not terminate at goal.
@@ -1004,14 +1043,15 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
   func=path_terminations.reached_path_goal,
   params={
     "success_progress": 0.98,
+    "waypoints": path_rewards.DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
   },
   )
 
   # Keep command simple. You just want to move the robot/camera and inspect terrain.
-  cfg.rewards["pose"].weight = 0.3
-  cfg.rewards["foot_gait"].weight = 0.2
+  cfg.rewards["pose"].weight = 0.4
+  cfg.rewards["foot_gait"].weight = 0.5
   cfg.rewards["foot_clearance"].weight = -0.1
-  cfg.rewards["foot_slip"].weight = -0.05
+  cfg.rewards["foot_slip"].weight = -0.10
   cfg.rewards["action_rate_l2"].weight = -0.02
 
   if not play:

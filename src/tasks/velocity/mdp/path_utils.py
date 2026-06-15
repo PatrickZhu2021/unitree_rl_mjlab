@@ -153,6 +153,14 @@ DEFAULT_ZIGZAG_PATH_WAYPOINTS = make_filleted_path_waypoints(
     arc_points=8,
 )
 
+# Tighter fillet for zigzag bridge training: avoids the sharp path cutting into
+# bridge edges while preserving a visibly zigzag route with late turns.
+DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS = make_filleted_path_waypoints(
+    DEFAULT_ZIGZAG_CONTROL_WAYPOINTS,
+    radius=0.30,
+    arc_points=10,
+)
+
 # Backward-compatible name.
 # From now on, DEFAULT_ZIGZAG_WAYPOINTS means the learning/reference path.
 DEFAULT_ZIGZAG_WAYPOINTS = DEFAULT_ZIGZAG_PATH_WAYPOINTS
