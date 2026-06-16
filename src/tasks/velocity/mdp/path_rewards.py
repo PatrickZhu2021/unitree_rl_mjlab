@@ -11,6 +11,8 @@ from mjlab.managers.scene_entity_config import SceneEntityCfg
 
 from src.tasks.velocity.mdp.path_utils import (
     DEFAULT_ZIGZAG_CONTROL_WAYPOINTS,
+    DEFAULT_ZIGZAG_ENV_LOCAL_CONTROL_WAYPOINTS,
+    DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
     DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
     DEFAULT_ZIGZAG_WAYPOINTS,
     project_points_to_path,
@@ -473,7 +475,7 @@ def path_lookahead_heading_l2(
     env: "ManagerBasedRlEnv",
     lookahead_distance: float = 0.0,
     waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_WAYPOINTS,
-    heading_waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_CONTROL_WAYPOINTS,
+    heading_waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_ENV_LOCAL_CONTROL_WAYPOINTS,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
     """Penalize yaw error to the heading path tangent.
@@ -494,7 +496,7 @@ def path_lookahead_heading_l2(
 def path_blended_heading_l2(
     env: "ManagerBasedRlEnv",
     turn_blend_distance: float = 0.15,
-    heading_waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_CONTROL_WAYPOINTS,
+    heading_waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_ENV_LOCAL_CONTROL_WAYPOINTS,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
     """Penalize yaw error to a short blended control-path heading.
@@ -534,7 +536,7 @@ def path_turn_heading_l2(
     env: "ManagerBasedRlEnv",
     turn_gate_distance: float = 0.45,
     turn_blend_distance: float = 0.30,
-    heading_waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_CONTROL_WAYPOINTS,
+    heading_waypoints: Tuple[Tuple[float, float, float], ...] = DEFAULT_ZIGZAG_ENV_LOCAL_CONTROL_WAYPOINTS,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
     """Penalize yaw error only near upcoming control-path turns.

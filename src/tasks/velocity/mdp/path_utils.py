@@ -161,9 +161,37 @@ DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS = make_filleted_path_waypoints(
     arc_points=10,
 )
 
-# Backward-compatible name.
-# From now on, DEFAULT_ZIGZAG_WAYPOINTS means the learning/reference path.
-DEFAULT_ZIGZAG_WAYPOINTS = DEFAULT_ZIGZAG_PATH_WAYPOINTS
+def make_env_local_waypoints(
+    waypoints: Tuple[Tuple[float, float, float], ...],
+    origin_xy: tuple[float, float],
+) -> Tuple[Tuple[float, float, float], ...]:
+    """Convert terrain-local waypoints into env-local waypoints."""
+    origin_x, origin_y = origin_xy
+    return tuple((x - origin_x, y - origin_y, z) for x, y, z in waypoints)
+
+
+# ZigZagRiskyBridgeTerrainCfg returns origin = [start_x - 0.4, start_y, ...].
+# Path rewards/observations use robot position after subtracting env.scene.env_origins,
+# so their waypoints need to be shifted into the same env-local frame.
+DEFAULT_ZIGZAG_ENV_ORIGIN_XY = (
+    DEFAULT_ZIGZAG_CONTROL_WAYPOINTS[0][0] - 0.4,
+    DEFAULT_ZIGZAG_CONTROL_WAYPOINTS[0][1],
+)
+DEFAULT_ZIGZAG_ENV_LOCAL_CONTROL_WAYPOINTS = make_env_local_waypoints(
+    DEFAULT_ZIGZAG_CONTROL_WAYPOINTS,
+    DEFAULT_ZIGZAG_ENV_ORIGIN_XY,
+)
+DEFAULT_ZIGZAG_ENV_LOCAL_PATH_WAYPOINTS = make_env_local_waypoints(
+    DEFAULT_ZIGZAG_PATH_WAYPOINTS,
+    DEFAULT_ZIGZAG_ENV_ORIGIN_XY,
+)
+DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS = make_env_local_waypoints(
+    DEFAULT_ZIGZAG_TIGHT_PATH_WAYPOINTS,
+    DEFAULT_ZIGZAG_ENV_ORIGIN_XY,
+)
+
+# Backward-compatible name for reward/observation helpers that work in env-local coordinates.
+DEFAULT_ZIGZAG_WAYPOINTS = DEFAULT_ZIGZAG_ENV_LOCAL_PATH_WAYPOINTS
 
 
 def wrap_to_pi(angle: torch.Tensor) -> torch.Tensor:
