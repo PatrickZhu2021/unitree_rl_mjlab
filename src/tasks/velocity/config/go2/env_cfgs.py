@@ -28,13 +28,13 @@ import src.tasks.velocity.mdp.rewards as bridge_rewards
 from src.tasks.velocity.mdp.velocity_command import BridgeVelocityCommandCfg
 
 import src.tasks.velocity.mdp.observations as bridge_observations
-import src.tasks.velocity.mdp.path_observations as path_observations
 
 from mjlab.managers.curriculum_manager import CurriculumTermCfg
 import src.tasks.velocity.mdp.curriculums as bridge_curriculums
 
 import src.tasks.velocity.mdp.path_rewards as path_rewards
-import src.tasks.velocity.mdp.path_terminations as path_terminations
+import src.tasks.velocity.mdp.heightmap_rewards as heightmap_rewards
+import src.tasks.velocity.mdp.heightmap_terminations as heightmap_terminations
 import src.tasks.velocity.mdp.path_commands as path_commands
 
 TerrainType = Literal["rough", "obstacles"]
@@ -661,7 +661,7 @@ def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnv
 
   Purpose:
     Pretrain Go2 to walk using:
-      proprioception + path_speed_command + zigzag_lookahead_path_prior
+      proprioception + path_speed_command + heightmap_lookahead_prior
 
     This is obs-compatible with Unitree-Go2-ZigZagBridge-Debug.
   """
@@ -718,20 +718,23 @@ def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnv
     },
   )
 
-  # Same lookahead path prior as bridge task.
-  cfg.observations["actor"].terms["zigzag_lookahead_path_prior"] = ObservationTermCfg(
-    func=path_observations.zigzag_lookahead_path_prior,
+  # Heightmap-derived local bridge prior. This has the same shape pattern as the
+  # old zigzag path prior, but infers center/edges from terrain_scan.
+  cfg.observations["actor"].terms["heightmap_lookahead_prior"] = ObservationTermCfg(
+    func=heightmap_rewards.heightmap_lookahead_prior,
     params={
       "bridge_half_width": zigzag_bridge_half_width,
       "turn_dist_scale": 2.0,
+      "sensor_name": "terrain_scan",
     },
   )
 
-  cfg.observations["critic"].terms["zigzag_lookahead_path_prior"] = ObservationTermCfg(
-    func=path_observations.zigzag_lookahead_path_prior,
+  cfg.observations["critic"].terms["heightmap_lookahead_prior"] = ObservationTermCfg(
+    func=heightmap_rewards.heightmap_lookahead_prior,
     params={
       "bridge_half_width": zigzag_bridge_half_width,
       "turn_dist_scale": 2.0,
+      "sensor_name": "terrain_scan",
     },
   )
 
@@ -749,36 +752,50 @@ def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnv
   cfg.rewards["track_angular_velocity"].weight = 0.0
 
   # Path-following rewards. Keep these aligned with zigzag bridge debug.
-  cfg.rewards["track_path_speed"] = RewardTermCfg(
-    func=path_rewards.path_forward_velocity_exp,
+  cfg.rewards["heightmap_track_speed"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_forward_velocity_exp,
     weight=4.0,
     params={
       "desired_speed": 0.5,
       "std": 0.30,
-      "backward_speed_tolerance": 0.03,
+      "backward_speed_tolerance": -0.10,
+      "lookahead_x": 0.80,
       "heading_gate_std": None,
-      "centerline_gate_std": 0.60,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "centerline_gate_std": None,
       "body_forward_gate": False,
       "body_lateral_gate_std": 0.30,
+      "sensor_name": "terrain_scan",
     },
   )
 
-  cfg.rewards["path_centerline_l2"] = RewardTermCfg(
-    func=path_rewards.path_centerline_l2,
-    weight=-2.0,
+  cfg.rewards["heightmap_centerline_l2"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_centerline_l2,
+    weight=-1.0,
     params={
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "sensor_name": "terrain_scan",
+      "lookahead_x_min": 0.0,
+      "lookahead_x_max": 0.50,
+      "min_valid_cols": 3,
+      "min_height": 0.0,
+      "max_height": 0.90,
+      "min_normal_z": 0.5,
+      "relative_height_margin": 0.20,
     },
   )
 
-  cfg.rewards["path_edge_penalty"] = RewardTermCfg(
-    func=path_rewards.path_edge_penalty,
+  cfg.rewards["heightmap_edge_penalty"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_edge_penalty,
     weight=-5.0,
     params={
-      "bridge_half_width": zigzag_bridge_half_width,
-      "edge_margin": 0.05,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "sensor_name": "terrain_scan",
+      "lookahead_x_min": -0.10,
+      "lookahead_x_max": 0.40,
+      "required_clearance": 0.15,
+      "min_valid_cols": 3,
+      "min_height": 0.0,
+      "max_height": 0.90,
+      "min_normal_z": 0.5,
+      "relative_height_margin": 0.20,
     },
   )
 
@@ -795,11 +812,12 @@ def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnv
     },
   )
 
-  cfg.rewards["path_lateral_velocity_l2"] = RewardTermCfg(
-    func=path_rewards.path_lateral_velocity_l2,
+  cfg.rewards["heightmap_lateral_velocity_l2"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_lateral_velocity_l2,
     weight=-0.25,
     params={
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "lookahead_x": 0.80,
+      "sensor_name": "terrain_scan",
     },
   )
 
@@ -808,35 +826,45 @@ def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnv
     weight=-0.10,
   )
 
-  cfg.rewards["path_success"] = RewardTermCfg(
-    func=path_rewards.path_success,
+  cfg.rewards["body_forward_velocity"] = RewardTermCfg(
+    func=heightmap_rewards.body_forward_velocity,
+    weight=1.5,
+    params={
+      "max_vel": 0.6,
+      "min_vel": 0.0,
+    },
+  )
+
+  cfg.rewards["heightmap_goal_success"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_goal_success,
     weight=100.0,
     params={
-      "success_progress": 0.98,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "goal_xy": (6.4, 0.0),
+      "success_radius": 0.35,
     },
   )
 
   cfg.rewards["is_terminated"] = RewardTermCfg(
-    func=path_rewards.is_terminated_no_path_goal,
+    func=heightmap_rewards.is_terminated_no_heightmap_goal,
     weight=-200.0,
     params={
-      "success_progress": 0.98,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "goal_xy": (6.4, 0.0),
+      "success_radius": 0.35,
     },
   )
 
-  cfg.rewards["path_progress"] = RewardTermCfg(
-    func=path_rewards.path_progress_reward,
+  cfg.rewards["heightmap_progress"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_progress_reward,
     weight=100.0,
     params={
       "max_delta_s": 0.05,
       "reset_jump_threshold": 0.30,
       "max_forward_jump": 0.35,
       "progress_scale": 1.0,
+      "lookahead_x": 0.80,
       "heading_gate_std": None,
-      "centerline_gate_std": 0.60,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "centerline_gate_std": None,
+      "sensor_name": "terrain_scan",
     },
   )
 
@@ -846,20 +874,20 @@ def unitree_go2_flat_zigzag_nav_env_cfg(play: bool = False) -> ManagerBasedRlEnv
   )
 
   # Keep normal walking gait.
-  cfg.rewards["pose"].weight = 0.4
-  cfg.rewards["foot_gait"].weight = 0.5
+  cfg.rewards["pose"].weight = 0.2
+  cfg.rewards["foot_gait"].weight = 1.0
   cfg.rewards["foot_clearance"].weight = -0.1
-  cfg.rewards["foot_slip"].weight = -0.10
-  cfg.rewards["action_rate_l2"].weight = -0.02
+  cfg.rewards["foot_slip"].weight = -0.05
+  cfg.rewards["action_rate_l2"].weight = -0.01
 
   # Use path-goal termination instead of old x-goal termination.
   cfg.terminations.pop("reached_goal", None)
 
-  cfg.terminations["reached_path_goal"] = TerminationTermCfg(
-    func=path_terminations.reached_path_goal,
+  cfg.terminations["reached_heightmap_goal"] = TerminationTermCfg(
+    func=heightmap_terminations.reached_heightmap_goal,
     params={
-      "success_progress": 0.98,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "goal_xy": (6.4, 0.0),
+      "success_radius": 0.35,
     },
   )
 
@@ -926,27 +954,25 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
     },
   )
   
-  cfg.observations["actor"].terms["zigzag_lookahead_path_prior"] = ObservationTermCfg(
-    func=path_observations.zigzag_lookahead_path_prior,
+  cfg.observations["actor"].terms["heightmap_lookahead_prior"] = ObservationTermCfg(
+    func=heightmap_rewards.heightmap_lookahead_prior,
     params={
       "bridge_half_width": zigzag_bridge_half_width,
       "turn_dist_scale": 2.0,
       "lookahead_distances": (0.20, 0.40, 0.60, 0.80),
-      "tangent_lookahead_distance": 0.0,
       "include_heading_features": False,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "sensor_name": "terrain_scan",
     },
   )
 
-  cfg.observations["critic"].terms["zigzag_lookahead_path_prior"] = ObservationTermCfg(
-    func=path_observations.zigzag_lookahead_path_prior,
+  cfg.observations["critic"].terms["heightmap_lookahead_prior"] = ObservationTermCfg(
+    func=heightmap_rewards.heightmap_lookahead_prior,
     params={
       "bridge_half_width": zigzag_bridge_half_width,
       "turn_dist_scale": 2.0,
       "lookahead_distances": (0.20, 0.40, 0.60, 0.80),
-      "tangent_lookahead_distance": 0.0,
       "include_heading_features": False,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "sensor_name": "terrain_scan",
     },
   )
 
@@ -1011,40 +1037,54 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
   cfg.rewards["track_angular_velocity"].weight = 0.0
   
   # Path-following rewards.
-  cfg.rewards["track_path_speed"] = RewardTermCfg(
-    func=path_rewards.path_forward_velocity_exp,
+  cfg.rewards["heightmap_track_speed"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_forward_velocity_exp,
     weight=4.0,
     params={
       "desired_speed": 0.5,
       "std": 0.30,
-      "backward_speed_tolerance": 0.03,
+      "backward_speed_tolerance": -0.10,
       # Heading gates are disabled during bootstrap so the policy cannot get
       # stuck optimizing heading in place before learning forward motion.
+      "lookahead_x": 0.80,
       "heading_gate_std": None,
       # Keep this off for bootstrap. A hard body-forward gate can remove too
       # much speed reward before the policy has learned a forward gait.
-      "centerline_gate_std": 0.60,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "centerline_gate_std": None,
       "body_forward_gate": False,
       "body_lateral_gate_std": 0.30,
+      "sensor_name": "terrain_scan",
     },
   )
 
-  cfg.rewards["path_centerline_l2"] = RewardTermCfg(
-    func=path_rewards.path_centerline_l2,
-    weight=-2.0,
+  cfg.rewards["heightmap_centerline_l2"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_centerline_l2,
+    weight=-1.0,
     params={
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "sensor_name": "terrain_scan",
+      "lookahead_x_min": 0.0,
+      "lookahead_x_max": 0.50,
+      "min_valid_cols": 3,
+      "min_height": 0.0,
+      "max_height": 0.90,
+      "min_normal_z": 0.5,
+      "relative_height_margin": 0.20,
     },
   )
 
-  cfg.rewards["path_edge_penalty"] = RewardTermCfg(
-    func=path_rewards.path_edge_penalty,
+  cfg.rewards["heightmap_edge_penalty"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_edge_penalty,
     weight=-5.0,
     params={
-      "bridge_half_width": zigzag_bridge_half_width,
-      "edge_margin": 0.05,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "sensor_name": "terrain_scan",
+      "lookahead_x_min": -0.10,
+      "lookahead_x_max": 0.40,
+      "required_clearance": 0.15,
+      "min_valid_cols": 3,
+      "min_height": 0.0,
+      "max_height": 0.90,
+      "min_normal_z": 0.5,
+      "relative_height_margin": 0.20,
     },
   )
 
@@ -1071,21 +1111,22 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
   #   },
   # )
 
-  cfg.rewards["path_turn_heading_l2"] = RewardTermCfg(
-    func=path_rewards.path_turn_heading_l2,
-    weight=0.0,
-    params={
-      "turn_gate_distance": 0.25,
-      "turn_blend_distance": 0.15,
-      "heading_waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_CONTROL_WAYPOINTS,
-    },
-  )
+  # cfg.rewards["path_turn_heading_l2"] = RewardTermCfg(
+  #   func=path_rewards.path_turn_heading_l2,
+  #   weight=0.0,
+  #   params={
+  #     "turn_gate_distance": 0.25,
+  #     "turn_blend_distance": 0.15,
+  #     "heading_waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_CONTROL_WAYPOINTS,
+  #   },
+  # )
 
-  cfg.rewards["path_lateral_velocity_l2"] = RewardTermCfg(
-    func=path_rewards.path_lateral_velocity_l2,
+  cfg.rewards["heightmap_lateral_velocity_l2"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_lateral_velocity_l2,
     weight=-0.25,
     params={
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "lookahead_x": 0.80,
+      "sensor_name": "terrain_scan",
     },
   )
 
@@ -1094,12 +1135,21 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
     weight=-0.10,
   )
 
-  cfg.rewards["path_success"] = RewardTermCfg(
-    func=path_rewards.path_success,
+  cfg.rewards["body_forward_velocity"] = RewardTermCfg(
+    func=heightmap_rewards.body_forward_velocity,
+    weight=1.5,
+    params={
+      "max_vel": 0.6,
+      "min_vel": 0.0,
+    },
+  )
+
+  cfg.rewards["heightmap_goal_success"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_goal_success,
     weight=100.0,
     params={
-      "success_progress": 0.98,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "goal_xy": (6.4, 0.0),
+      "success_radius": 0.35,
     },
   )
 
@@ -1109,25 +1159,26 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
   # )
 
   cfg.rewards["is_terminated"] = RewardTermCfg(
-    func=path_rewards.is_terminated_no_path_goal,
+    func=heightmap_rewards.is_terminated_no_heightmap_goal,
     weight=-200.0,
     params={
-      "success_progress": 0.98,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "goal_xy": (6.4, 0.0),
+      "success_radius": 0.35,
     },
   )
   
-  cfg.rewards["path_progress"] = RewardTermCfg(
-    func=path_rewards.path_progress_reward,
+  cfg.rewards["heightmap_progress"] = RewardTermCfg(
+    func=heightmap_rewards.heightmap_progress_reward,
     weight=100.0,
     params={
       "max_delta_s": 0.05,
       "reset_jump_threshold": 0.30,
       "max_forward_jump": 0.35,
       "progress_scale": 1.0,
+      "lookahead_x": 0.80,
       "heading_gate_std": None,
-      "centerline_gate_std": 0.60,
-      "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
+      "centerline_gate_std": None,
+      "sensor_name": "terrain_scan",
     },
   )
 
@@ -1146,20 +1197,20 @@ def unitree_go2_zigzag_bridge_debug_env_cfg(play: bool = False) -> ManagerBasedR
   )
 
   # For terrain visualization, do not terminate at goal.
-  cfg.terminations["reached_path_goal"] = TerminationTermCfg(
-  func=path_terminations.reached_path_goal,
-  params={
-    "success_progress": 0.98,
-    "waypoints": path_rewards.DEFAULT_ZIGZAG_ENV_LOCAL_TIGHT_PATH_WAYPOINTS,
-  },
+  cfg.terminations["reached_heightmap_goal"] = TerminationTermCfg(
+    func=heightmap_terminations.reached_heightmap_goal,
+    params={
+      "goal_xy": (6.4, 0.0),
+      "success_radius": 0.35,
+    },
   )
 
   # Keep command simple. You just want to move the robot/camera and inspect terrain.
-  cfg.rewards["pose"].weight = 0.4
-  cfg.rewards["foot_gait"].weight = 0.5
+  cfg.rewards["pose"].weight = 0.5  # 0.2
+  cfg.rewards["foot_gait"].weight = 1.0
   cfg.rewards["foot_clearance"].weight = -0.1
-  cfg.rewards["foot_slip"].weight = -0.10
-  cfg.rewards["action_rate_l2"].weight = -0.02
+  cfg.rewards["foot_slip"].weight = -0.05
+  cfg.rewards["action_rate_l2"].weight = -0.01
 
   if not play:
     cfg.terminations.pop("reached_goal", None)
